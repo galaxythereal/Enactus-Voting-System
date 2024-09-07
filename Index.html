@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+  <?!= include('Stylesheet'); ?>
+</head>
+
+<body>
+  <div class="container">
+    <div id="loginPage">
+      <h1><i class="fas fa-vote-yea"></i> Enactus Menufiya Voting System</h1>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="nationalId"><i class="fas fa-id-card"></i> National ID:</label>
+          <input type="text" id="nationalId" name="nationalId" required>
+        </div>
+        <div class="form-group">
+          <label for="password"><i class="fas fa-lock"></i> Password:</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button class="btn" type="submit"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </form>
+      <div id="loginMessage" class="message"></div>
+      <!-- Added footer text -->
+      <p class="footer">By: Mahmoud Ezzat</p>
+    </div>
+
+    <div id="nomineesPage" style="display: none;">
+      <h2>Welcome, <span id="memberName"></span>!</h2>
+      <h3><i class="fas fa-user-friends"></i> Select a Nominee</h3>
+      <select id="nomineeSelect"></select>
+      <button class="btn" onclick="showVotingPage()"><i class="fas fa-chevron-right"></i> Go to Voting Page</button>
+      <p id="noNomineesMessage" style="display: none;">You have voted for all nominees.</p>
+      <button class="btn btn-secondary" onclick="showPresidentialVoting()"><i class="fas fa-star"></i> Vote for President</button>
+    </div>
+
+    <div id="votingPage" style="display: none;">
+      <h2><i class="fas fa-vote-yea"></i> Vote for <span id="nomineeName"></span></h2>
+      <p>Do you support this nominee?</p>
+      <button class="btn btn-yes" onclick="vote('Yes')"><i class="fas fa-thumbs-up"></i> Yes</button>
+      <button class="btn btn-no" onclick="vote('No')"><i class="fas fa-thumbs-down"></i> No</button>
+    </div>
+
+    <div id="presidentialVotingPage" style="display: none;">
+      <h2><i class="fas fa-star"></i> Vote for President</h2>
+      <div id="presidentialCandidates"></div>
+    </div>
+
+    <div id="thankYouPage" style="display: none;">
+      <h2><i class="fas fa-check-circle"></i> Thank you for voting!</h2>
+      <p>Your vote has been recorded.</p>
+      <button class="btn" onclick="goBackToNominees()"><i class="fas fa-arrow-left"></i> Back to Nominees</button>
+    </div>
+    <div id="adminPage" style="display: none;">
+      <h2><i class="fas fa-user-shield"></i> Admin Panel</h2>
+
+      <h3>Select a Nominee</h3>
+      <select id="adminNomineeSelect">
+        <option value="">-- Select a Nominee --</option>
+      </select>
+
+      <h3>Voters for Selected Nominee</h3>
+      <div id="votersList"></div>
+
+      <h3>Non-Voters for Selected Nominee</h3>
+      <div id="nonVotersList"></div>
+
+      <h3>Members Who Haven't Voted</h3>
+      <div id="nonVotersOverall"></div>
+
+      <h3>Nominee Statistics</h3>
+      <table id="nomineeStatsTable">
+        <thead>
+          <tr>
+            <th>Nominee</th>
+            <th>Yes Rate</th>
+            <th>Total Votes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <?!= include('JavaScript'); ?>
+  </div>
+</body>
+
+</html>
