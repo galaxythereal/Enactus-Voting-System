@@ -1,0 +1,229 @@
+<script>
+    let currentNationalId = '';
+  let isAdmin = false;
+
+  // Login form submission
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var nationalId = document.getElementById('nationalId').value;
+    var password = document.getElementById('password').value;
+    var loginMessage = document.getElementById('loginMessage');
+    
+    loginMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+    loginMessage.className = 'message';
+    
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          currentNationalId = result.nationalId;
+          isAdmin = result.nationalId === 'admin'; // Assuming 'admin' is the admin's National ID
+          document.getElementById('loginPage').style.display = 'none';
+          if (isAdmin) {
+            loadAdminPage();
+          } else {
+            document.getElementById('nomineesPage').style.display = 'block';
+            document.getElementById('memberName').textContent = result.name;
+            loadNominees();
+          }
+        } else {
+          loginMessage.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + result.message;
+          loginMessage.className = 'message error';
+        }
+      })
+      .withFailureHandler(function(error) {
+        loginMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> An error occurred. Please try again.';
+        loginMessage.className = 'message error';
+        console.error('Login error:', error);
+      })
+      .checkLogin(nationalId, password);
+  });
+// 
+// Load nominees and group them by committees
+function loadNominees() {
+  google.script.run
+    .withSuccessHandler(function(groupedNominees) {
+      var select = document.getElementById('nomineeSelect');
+      select.innerHTML = ''; // Clear previous options
+
+      // Check if there are any committees with nominees
+      if (Object.keys(groupedNominees).length > 0) {
+        // Iterate through each committee group
+        for (var committee in groupedNominees) {
+          // Create an optgroup element for each committee
+          var optgroup = document.createElement('optgroup');
+          optgroup.label = committee;
+
+          // Iterate through each nominee under the committee
+          groupedNominees[committee].forEach(function(nominee) {
+            var option = document.createElement('option');
+            option.value = nominee;
+            option.textContent = nominee;
+            optgroup.appendChild(option); // Add nominee to the committee group
+          });
+
+          // Append the group to the select element
+          select.appendChild(optgroup);
+        }
+
+        // Display the select and voting button
+        select.style.display = 'block';
+        document.querySelector('#nomineesPage .btn').style.display = 'inline-block';
+        document.getElementById('noNomineesMessage').style.display = 'none';
+      } else {
+        // If no nominees are available
+        select.style.display = 'none';
+        document.querySelector('#nomineesPage .btn').style.display = 'none';
+        document.getElementById('noNomineesMessage').style.display = 'block';
+      }
+    })
+    .withFailureHandler(function(error) {
+      console.error('Error loading nominees:', error);
+      alert('Failed to load nominees. Please refresh the page and try again.');
+    })
+    .getNominees(currentNationalId); // Call the modified getNominees function with the current user's ID
+}
+
+
+  // Show voting page
+  function showVotingPage() {
+    var nominee = document.getElementById('nomineeSelect').value;
+    document.getElementById('nomineeName').textContent = nominee;
+    document.getElementById('nomineesPage').style.display = 'none';
+    document.getElementById('votingPage').style.display = 'block';
+  }
+  // Record vote
+  function vote(voteValue) {
+    var nominee = document.getElementById('nomineeName').textContent;
+    
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          document.getElementById('votingPage').style.display = 'none';
+          document.getElementById('thankYouPage').style.display = 'block';
+        } else {
+          alert(result.message);
+        }
+      })
+      .withFailureHandler(function(error) {
+        console.error('Voting error:', error);
+        alert('An error occurred while recording your vote. Please try again.');
+      })
+      .recordVote(nominee, voteValue, currentNationalId);
+  }
+
+  // Go back to nominees page
+  function goBackToNominees() {
+    document.getElementById('thankYouPage').style.display = 'none';
+    document.getElementById('nomineesPage').style.display = 'block';
+    loadNominees();
+  }
+
+function showPresidentialVoting() {
+  google.script.run
+    .withSuccessHandler(function(candidates) {
+      var candidatesContainer = document.getElementById('presidentialCandidates');
+      candidatesContainer.innerHTML = '';
+      candidates.forEach(function(candidate) {
+        var candidateDiv = document.createElement('div');
+        candidateDiv.className = 'presidential-candidate';
+        candidateDiv.innerHTML = `
+          <img src="${candidate[1]}" alt="${candidate[0]}">
+          <h3>${candidate[0]}</h3>
+          <button class="btn" onclick="voteForPresident('${candidate[0]}')">Vote</button>
+        `;
+        candidatesContainer.appendChild(candidateDiv);
+      });
+      document.getElementById('nomineesPage').style.display = 'none';
+      document.getElementById('presidentialVotingPage').style.display = 'block';
+    })
+    .withFailureHandler(function(error) {
+      console.error('Error loading presidential candidates:', error);
+      alert('Failed to load presidential candidates. Please try again.');
+    })
+    .getPresidentialCandidates();
+}
+
+
+  // Vote for president
+  function voteForPresident(candidate) {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          document.getElementById('presidentialVotingPage').style.display = 'none';
+          document.getElementById('thankYouPage').style.display = 'block';
+        } else {
+          alert(result.message);
+        }
+      })
+      .withFailureHandler(function(error) {
+        console.error('Presidential voting error:', error);
+        alert('An error occurred while recording your vote. Please try again.');
+      })
+      .recordPresidentialVote(candidate, currentNationalId);
+  }
+
+function loadAdminPage() {
+  console.log('Loading admin page...');
+  google.script.run.withSuccessHandler(function(data) {
+    console.log('Received admin data:', data);
+    
+    var adminNomineeSelect = document.getElementById('adminNomineeSelect');
+    adminNomineeSelect.innerHTML = '<option value="">-- Select a Nominee --</option>';
+    
+    if (data.nominees && data.nominees.length > 0) {
+      data.nominees.forEach(function(nominee) {
+        var option = document.createElement('option');
+        option.value = nominee;
+        option.textContent = nominee;
+        adminNomineeSelect.appendChild(option);
+      });
+      console.log('Nominees loaded into admin dropdown');
+    } else {
+      console.log('No nominees found in the data');
+    }
+
+    // Populate non-voters list
+    var nonVotersOverall = document.getElementById('nonVotersOverall');
+    nonVotersOverall.innerHTML = '<ul>' + data.nonVoters.map(voter => '<li>' + voter + '</li>').join('') + '</ul>';
+
+    // Populate nominee statistics
+    var nomineeStatsTable = document.getElementById('nomineeStatsTable').getElementsByTagName('tbody')[0];
+    nomineeStatsTable.innerHTML = ''; // Clear existing rows
+    data.nomineeStats.forEach(function(stat) {
+      var row = nomineeStatsTable.insertRow();
+      row.insertCell(0).textContent = stat.name;
+      row.insertCell(1).textContent = stat.yesRate;
+      row.insertCell(2).textContent = stat.totalVotes;
+    });
+
+    // Show the admin page
+    document.getElementById('adminPage').style.display = 'block';
+
+    // Add event listener for nominee selection
+    adminNomineeSelect.addEventListener('change', function() {
+      var selectedNominee = this.value;
+      if (selectedNominee) {
+        google.script.run.withSuccessHandler(displayNomineeVoters).getNomineeVoters(selectedNominee);
+      } else {
+        document.getElementById('votersList').innerHTML = '';
+        document.getElementById('nonVotersList').innerHTML = '';
+      }
+    });
+  }).getAdminData();
+}
+
+function displayNomineeVoters(data) {
+  var votersList = document.getElementById('votersList');
+  var nonVotersList = document.getElementById('nonVotersList');
+
+  votersList.innerHTML = '<ul>' + data.voters.map(voter => '<li>' + voter + '</li>').join('') + '</ul>';
+  nonVotersList.innerHTML = '<ul>' + data.nonVoters.map(voter => '<li>' + voter + '</li>').join('') + '</ul>';
+}
+
+ 
+  function testLoadAdminPage() {
+    console.log('Testing admin page load...');
+    loadAdminPage();
+  }
+
+</script>
